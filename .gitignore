@@ -1,0 +1,8 @@
+.DS_Store
+
+# Stray root-level scaffold files from earlier experiments;
+# the canonical project lives in Tetris-Game/
+/eslint.config.js
+/package.json
+/tsconfig.json
+/vite.config.ts
