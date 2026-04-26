@@ -217,7 +217,7 @@ By design, the v1 build leaves the following on the table — the intent is corr
 
 ## ⚖️ License
 
-Released under the **MIT License**. © 2026 Zoltan Dul.
+Released under the [MIT License](./LICENSE). © 2026 Zoltan Dul.
 
 ---
 
