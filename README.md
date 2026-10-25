@@ -1,224 +1,220 @@
 # 🧱 Tetris
 
-A correct, minimal, type-safe **Tetris** built with **React 19**, **Vite**, and **TypeScript**. Keyboard-first, grid-based DOM (no canvas), pure game logic separated from presentation, sibling project to [Snake-Game](https://github.com/ZoliQua/Snake-Game).
+A correct, minimal, type-safe **Tetris** built with **React 18**, **Vite** and **TypeScript** — SRS rotation, 7-bag, hold, ghost piece, keyboard-first, grid-based DOM, no canvas, no game engine.
+Runs on its own **and** as one of the six games of **[Zoltan's Arcade](https://github.com/ZoliQua/Arcade-Game-Center)**.
 
+[![CI](https://github.com/ZoliQua/Tetris-Game/actions/workflows/ci.yml/badge.svg)](https://github.com/ZoliQua/Tetris-Game/actions/workflows/ci.yml)
 ![license](https://img.shields.io/badge/license-MIT-green)
 ![node](https://img.shields.io/badge/node-%E2%89%A520-339933?logo=node.js&logoColor=white)
-![react](https://img.shields.io/badge/React-19-61dafb?logo=react&logoColor=white)
-![vite](https://img.shields.io/badge/Vite-8-646cff?logo=vite&logoColor=white)
-![typescript](https://img.shields.io/badge/TypeScript-strict-3178c6?logo=typescript&logoColor=white)
+![react](https://img.shields.io/badge/React-18-61dafb?logo=react&logoColor=white)
+![vite](https://img.shields.io/badge/Vite-5-646cff?logo=vite&logoColor=white)
+![typescript](https://img.shields.io/badge/TypeScript-5-3178c6?logo=typescript&logoColor=white)
 ![guideline](https://img.shields.io/badge/SRS-Guideline-aa3bff)
 
 ---
 
 ## 📑 Table of contents
 
+- [The Zoltan's Arcade family](#-the-zoltans-arcade-family)
 - [Features](#-features)
+- [Quick start](#-quick-start)
+- [Controls](#%EF%B8%8F-controls)
+- [Scoring & stats](#-scoring--stats)
+- [Autosave & resume](#-autosave--resume)
+- [Embedding in Arcade-Game-Center](#-embedding-in-arcade-game-center)
 - [How it works](#-how-it-works)
-- [Requirements](#-requirements)
-- [Installation](#-installation)
-- [Usage](#-usage)
-- [Controls](#-controls)
-- [Scoring](#-scoring)
-- [Gravity](#-gravity)
-- [Lock delay & hold](#-lock-delay--hold)
 - [Scripts](#-scripts)
-- [Architecture](#-architecture)
-- [Out of scope (v1)](#-out-of-scope-v1)
-- [License](#-license)
+- [Architecture](#%EF%B8%8F-architecture)
+- [Contributing](#-contributing)
+- [License](#%EF%B8%8F-license)
+
+## 🕹️ The Zoltan's Arcade family
+
+Every game is a standalone repo that also plugs into the portal. They share one design system, one scoring model and one save format through the vendored [`src/arcade/`](./src/arcade) kit.
+
+| Game | Repo | Genre |
+| --- | --- | --- |
+| 🏠 **Arcade portal** | [Arcade-Game-Center](https://github.com/ZoliQua/Arcade-Game-Center) | All games in one place, live demos, stats, leaderboard |
+| 🧱 **Tetris** (this repo) | [Tetris-Game](https://github.com/ZoliQua/Tetris-Game) | Arcade |
+| 🐍 Snake | [Snake-Game](https://github.com/ZoliQua/Snake-Game) | Reflex |
+| 🔢 2048 | [2048-Game](https://github.com/ZoliQua/2048-Game) | Puzzle |
+| 🟡 Pac-Man | [Pac-Man-Game](https://github.com/ZoliQua/Pac-Man-Game) | Maze |
+| ⚫ Gomoku | [Gomoku-Game](https://github.com/ZoliQua/Gomoku-Game) | Strategy |
+| 🦷 Tic-Tac-Toe | [Tic-Tac-Toe-Game](https://github.com/ZoliQua/Tic-Tac-Toe-Game) | Duel |
 
 ## ✨ Features
 
 - 🎮 **Standard 10×20 playfield** with a 2-row hidden buffer above the visible top
-- 🧱 **All seven tetrominoes** — `I`, `O`, `T`, `S`, `Z`, `J`, `L` — in Guideline colours
+- 🧱 **All seven tetrominoes** — `I`, `O`, `T`, `S`, `Z`, `J`, `L` — in Guideline colours (shared `--tetro-*` tokens)
 - 🔄 **SRS rotation** with separate wall-kick tables for `JLSTZ` and `I`; `O` is a true no-op
-- 🎲 **7-bag randomizer** — every 7 consecutive pieces contains each tetromino exactly once
-- 👀 **Next queue** of 5 upcoming pieces, always topped up
-- 📦 **Hold slot** with single-use-per-spawn locking
-- 👻 **Ghost piece** at the exact hard-drop landing row
-- ⏬ **Soft drop** (1 pt/cell) and **hard drop** (2 pt/cell, lock instantly)
+- 🎲 **7-bag randomizer** — every bag of 7 contains each tetromino exactly once (injectable RNG)
+- 👀 **Next queue** of 5 upcoming pieces, 📦 **hold slot** with single-use-per-piece locking, 👻 **ghost piece**
+- ⏬ **Soft drop** (1 pt/cell) and **hard drop** (2 pt/cell, locks instantly)
 - ⏱️ **Lock delay** of 500 ms with move-reset, capped at 15 resets per Guideline
-- 🏆 **Persistent best score** in `localStorage` — only written on a strictly higher score
-- ⏰ **Real-time elapsed timer** (`mm:ss`) that pauses with the game
-- 🎚️ **Starting level selector** (1–10) — score and gravity scale from the chosen level
-- ⌨️ **Keyboard-first** — arrows + WASD + Z/X/C/Shift/Space/P/R, all `preventDefault`-ed
-- 🧼 **Pure game logic** in `src/logic/`; React components only read state and dispatch actions
-- 🔒 **Strict TypeScript** with no `any` escape hatches in game code
+- 🎚️ **Start level selector** (1–10) — score and gravity scale from the chosen level
+- 💾 **Autosave & resume** — close the tab mid-run and pick up exactly where you left off
+- 🏆 **Unified arcade stats** — best score, plays, total time, shared with the portal
+- ⏱️ **Pause-aware run timer**
+- 🌗 **Dark / light theme** shared with every arcade game (press **T**)
+- 🤖 **Attract-mode demo** (`<TetrisDemo />`) — the real reducer driven by a heuristic autopilot, shown on the portal's landing page
+- ⌨️ **Keyboard-first**; hotkeys are ignored while you type in a form field or hold Cmd/Ctrl/Alt
+- 🧪 **Tested** — pure-logic unit tests plus component tests with Vitest + Testing Library
 
-## 🧠 How it works
+## 🚀 Quick start
 
-The game is a four-state machine:
-
-```
-idle → running ↔ paused → gameOver → (restart) → idle/running
-```
-
-A single pure reducer, `advanceGame(state, action, rng?): GameState`, owns every transition. Components never mutate the board — they dispatch actions like `{type: 'move', dx: -1}` or `{type: 'tick', dtMs}` and re-render off the new state.
-
-Each gravity tick:
-
-1. Resolve current gravity step from the level table (or soft-drop rate when `isSoftDropping`).
-2. Consume accumulated time, moving the active piece down one row per step until it can't.
-3. If the piece is grounded, start the **500 ms lock timer**; reset it on move/rotate (capped at 15 resets per Guideline).
-4. When the lock timer reaches 0, **merge** the piece into the board, **clear** any full rows, **score** the line clear (Single/Double/Triple/Tetris × level), and **spawn** the next piece from the 7-bag.
-5. Spawn collision or any locked cell in the hidden buffer (rows 0–1) ends the game.
-
-The render loop is a `requestAnimationFrame` hook (`useGameLoop`) that runs **only** while `status === 'running'` and uses a latest-callback ref to avoid stale-closure bugs. Input is captured by a single `keydown`/`keyup` listener (`useKeyboardControls`) that calls `preventDefault()` on the arrow keys and Space so the page never scrolls mid-play.
-
-## 📦 Requirements
-
-- 🟢 **Node ≥ 20**
-- 📦 **npm** (the lockfile is committed as `package-lock.json`)
-- 🖥️ **Modern desktop browser** (mobile/touch is intentionally out of scope for v1)
-
-## 🚀 Installation
+Requires **Node ≥ 20** and npm.
 
 ```bash
 git clone https://github.com/ZoliQua/Tetris-Game.git
-cd Tetris-Game/Tetris-Game
+cd Tetris-Game
 npm install
+npm run dev          # http://localhost:5173
 ```
 
-> The Vite app lives one level deep at `Tetris-Game/Tetris-Game/`. The repo root holds `CLAUDE.md`, `PLAN-TETRIS-GAME.md`, and this README.
-
-## 🕹️ Usage
-
-Start the dev server:
-
-```bash
-npm run dev
-```
-
-Then open `http://localhost:5173` in a modern desktop browser.
-
-For a production build:
-
-```bash
-npm run build
-npm run preview
-```
+Production build: `npm run build && npm run preview`. The build uses relative asset paths, so `dist/` can be served from any sub-folder.
 
 ## ⌨️ Controls
 
-| Key                     | Action                       |
-| ----------------------- | ---------------------------- |
-| ⬅️ / ➡️                 | Move left / right            |
-| **A** / **D**           | Move left / right (alt)      |
-| ⬇️ / **S**              | Soft drop (1 pt per cell)    |
-| ⬆️ / **W** / **X**      | Rotate clockwise             |
-| **Z**                   | Rotate counter-clockwise     |
-| **Space**               | Hard drop (2 pt per cell, locks instantly) |
-| **Shift** / **C**       | Hold piece                   |
-| **P**                   | Pause / Resume               |
-| **R**                   | Restart                      |
+| Key | Action |
+| --- | --- |
+| ⬅️ ➡️ / **A D** | Move left / right (auto-repeats) |
+| ⬇️ / **S** | Soft drop (1 pt per cell) |
+| ⬆️ / **W** / **X** | Rotate clockwise |
+| **Z** | Rotate counter-clockwise |
+| **Space** | Hard drop (2 pt per cell, locks instantly) |
+| **Shift** / **C** | Hold piece |
+| **Enter** | Start · pause · resume |
+| **P** / **Esc** | Pause / resume |
+| **R** | Restart |
+| **T** | Toggle dark / light theme (standalone page) |
 
-Any movement, rotation, drop, or hold key also starts the game from the idle screen.
+Gameplay keys only act while a run is playing; **Space** is always hard drop and never starts a run, so a late
+drop at game over can't launch the next game by accident.
 
-## 🎯 Scoring
+## 🎯 Scoring & stats
 
-Guideline-style line-clear points scaled by the current level:
+Guideline-style line-clear points scaled by the level the clear was made on:
 
-| Clear         | Points          |
-| ------------- | --------------- |
-| 🟦 Single     | `100 × level`   |
-| 🟪 Double     | `300 × level`   |
-| 🟧 Triple     | `500 × level`   |
-| 🟥 **Tetris** | `800 × level`   |
-| ⬇️ Soft drop  | `1` per cell dropped by soft drop |
-| ⏬ Hard drop  | `2` per cell dropped by hard drop |
+| Clear | Points |
+| --- | --- |
+| 🟦 Single | `100 × level` |
+| 🟪 Double | `300 × level` |
+| 🟧 Triple | `500 × level` |
+| 🟥 **Tetris** | `800 × level` |
+| ⬇️ Soft drop | `1` per cell dropped by soft drop |
+| ⏬ Hard drop | `2` per cell dropped by hard drop |
 
-**Level progression**: `level = startLevel + floor(lines / 10)`, clamped to **15**. The starting level is selectable (1–10) before each new game.
+**Level progression**: `level = startLevel + floor(lines / 10)`, clamped to **15**. The starting level is selectable (1–10) between runs.
 
-The **best score** is persisted to `localStorage` under the key `tetris.highScore` and only overwritten when strictly higher. Clear your site data to reset it.
+**Gravity** (ms per row, NES-inspired):
 
-## ⏱️ Gravity
+| Level | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11–13 | 14–15 |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| ms / row | 800 | 717 | 633 | 550 | 467 | 383 | 300 | 217 | 133 | 100 | 83 | 67 |
 
-Frames-per-row table at 60 FPS, classic NES-inspired and simplified:
+Soft-drop gravity = `max(30 ms, floor(currentGravityMs / 20))`. Hard drop bypasses gravity and lock delay.
 
-| Level   | Frames | ~ms   |
-| ------- | -----: | ----: |
-| 1       | 48     | 800   |
-| 2       | 43     | 717   |
-| 3       | 38     | 633   |
-| 4       | 33     | 550   |
-| 5       | 28     | 467   |
-| 6       | 23     | 383   |
-| 7       | 18     | 300   |
-| 8       | 13     | 217   |
-| 9       | 8      | 133   |
-| 10      | 6      | 100   |
-| 11–13   | 5      | 83    |
-| 14–15   | 4      | 67    |
+**Lock delay & hold**: a grounded piece locks after **500 ms**; every successful move or rotation resets the timer, at most
+**15 times** per piece (Guideline move reset). Hold is a single slot: once used it stays locked until the current piece locks down.
 
-Soft-drop gravity = `max(30 ms, floor(currentGravityMs / 20))`. Hard drop bypasses gravity (and lock delay) entirely.
+When a run ends the kit records it once in `localStorage` under `arcade.stats.tetris`
+(`best`, `plays`, `wins`, `totalScore`, `totalSeconds`, `lastScore`, `lastPlayedAt`).
+The legacy `tetris.highScore` key is migrated and kept in sync, so older builds keep their record.
 
-## 🔒 Lock delay & hold
+## 💾 Autosave & resume
 
-- **Lock delay** is **500 ms** from the moment the piece touches the stack. It **resets on every successful move or rotation**, but never on a gravity tick. A piece is allowed at most **15 resets** before it locks regardless of further input — this is the Guideline "move reset" rule.
-- **Hold** is a single slot with a `canHold` flag. Hold is unlocked at spawn, flips to `false` the instant you use it, and only flips back to `true` when the current piece **locks down** (not on a mere line clear or gravity tick). This blocks the classic infinite-hold cheese.
+While a run is in progress the **whole game state** — board, falling piece, next queue, bag remainder, hold, score, lines,
+level, lock and gravity timers — is saved about once a second and whenever the page is hidden or the game is unmounted
+(key `arcade.session.tetris`, schema-versioned and strictly validated on load). Reloading shows **Welcome back** with the
+restored run paused. **Discard** next to the *Autosaved* badge throws the save away. Finished runs clear their save automatically.
+
+## 🧩 Embedding in Arcade-Game-Center
+
+```tsx
+import { TetrisGame, TetrisDemo } from '@arcade/tetris';
+
+<TetrisGame
+  embedded                                   // hide the page title; the portal shows it
+  onGameOver={(score) => submitScore('tetris', score)}
+  onStatusChange={({ status, score, seconds }) => updateHeader(status, seconds)}
+/>
+<TetrisDemo active={cardIsVisible} />         // landing-page attract mode
+```
+
+Both components follow the shared `ArcadeGameProps` / `ArcadeDemoProps` contract from `src/arcade/types.ts`.
+
+## 🧠 How it works
+
+State machine: `idle → running ↔ paused → gameOver → (restart) → running` — mapped 1:1 onto the arcade status.
+
+A single pure reducer, `advanceGame(state, action, rng?)`, owns every transition. Components never mutate the board — they
+dispatch actions like `{ type: 'move', dx: -1 }` or `{ type: 'tick', dtMs }` and re-render off the new state.
+
+Each gravity tick:
+
+1. Resolve the gravity step from the level table (or the soft-drop rate while soft dropping).
+2. Consume accumulated time, moving the piece down one row per step until it can't.
+3. If the piece is grounded, start the **500 ms lock timer**; moves/rotations reset it (max 15 times).
+4. When the timer runs out, **merge** the piece, **clear** full rows (scanned top-down, rows above shift down), **score** the
+   clear at the current level, then **spawn** the next piece from the 7-bag.
+5. A spawn collision, or blocks left in the hidden buffer (rows 0–1) after the clear, ends the game.
+
+`useGameLoop` is a `requestAnimationFrame` loop that runs only while playing, reads the latest callback from a ref, and caps
+each frame at 100 ms so returning to a background tab never slams the piece down. `useKeyboardControls` attaches one
+`keydown`/`keyup`/`blur` listener set for the component's lifetime.
+
+**Demo autopilot** (`src/logic/autopilot.ts`): for every new piece it tries each rotation × column by feeding the candidate
+actions (rotate, move, hard drop) through the real reducer, scores the resulting board with the classic heuristic
+
+```
+−0.51 × aggregate height + 0.76 × completed lines − 0.36 × holes − 0.18 × bumpiness
+```
+
+and then replays the winning action sequence on the live game, one action per demo tick.
 
 ## 🧪 Scripts
 
-| Script                | Purpose                                |
-| --------------------- | -------------------------------------- |
-| `npm run dev`         | Start the local dev server (Vite)      |
-| `npm run build`       | Type-check and produce a prod bundle   |
-| `npm run preview`     | Preview the production build           |
-| `npm run typecheck`   | Run `tsc -b --noEmit`                  |
-| `npm run lint`        | Run ESLint across the project          |
+| Script | Purpose |
+| --- | --- |
+| `npm run dev` | Vite dev server |
+| `npm run build` | Type-check (`tsc -b`) and production build |
+| `npm run preview` | Serve the production build |
+| `npm run typecheck` | `tsc -b` |
+| `npm run lint` | ESLint |
+| `npm test` | Vitest (logic + component tests) |
+| `npm run check` | lint → typecheck → test → build (what CI runs) |
 
 ## 🏗️ Architecture
 
-Logic lives outside presentation. Game rules never leak into JSX.
-
 ```
-Tetris-Game/
-  src/
-    logic/        pure game rules (no React)
-      types.ts        shared types (Cell, Board, ActivePiece, GameState, GameAction, ...)
-      constants.ts    grid size, gravity table, SRS kick tables, tetromino shapes, colours
-      tetromino.ts    shape lookup, spawn helpers, absolute-cell projection
-      bag.ts          7-bag randomizer with injectable RNG
-      rotation.ts     SRS wall-kick resolver (per from→to transition)
-      board.ts        emptyBoard, collides, mergePiece, clearFullRows, top-out check
-      scoring.ts      line-clear, soft/hard drop points, level from lines
-      game.ts         advanceGame(state, action, rng) reducer + getGhostY
-    hooks/
-      useGameLoop.ts          requestAnimationFrame tick, latest-ref pattern
-      useKeyboardControls.ts  arrows + WASD + Z/X/C/Shift/Space/P/R, single listener
-      useHighScore.ts         localStorage tetris.highScore, write-on-new-best, cross-tab sync
-      useElapsedSeconds.ts    mm:ss timer that pauses with the game and resets per run
-    components/
-      GameBoard.tsx     playfield + active piece overlay + ghost outline
-      NextQueue.tsx     next 5 previews
-      HoldSlot.tsx      held piece (dimmed when hold is locked)
-      ScoreBoard.tsx    score + lines + level + best + time + status
-      GameControls.tsx  start / pause / restart buttons
-      LevelControl.tsx  starting-level slider (1–10)
-      Overlay.tsx       idle / paused / gameOver scrim
-      PiecePreview.tsx  shared 4×4 preview cell used by next queue and hold
-    styles/
-      game.css        playfield grid, panel chrome, overlay scrim
-    App.tsx           state machine + wiring
-    main.tsx          React entry
+src/
+  arcade/              vendored Zoltan's Arcade kit — do not edit here (see its README)
+  logic/               pure game rules (no React)
+    types.ts constants.ts tetromino.ts bag.ts rotation.ts board.ts scoring.ts
+    game.ts            advanceGame reducer + initialState + getGhostY
+    autopilot.ts       heuristic placement bot for the demo (planMove, stepDemo)
+    persist.ts         runtime validation of saved sessions
+  hooks/               useGameLoop (rAF), useKeyboardControls
+  components/          GameBoard (full + mini), PiecePreview, HoldSlot, NextQueue, LevelControl
+  demo/TetrisDemo.tsx  landing-page attract mode
+  TetrisGame.tsx       the embeddable game (ArcadeGameProps)
+  App.tsx              standalone page: <ArcadeShell><TetrisGame/></ArcadeShell>
+  main.tsx             entry; loads the shared arcade.css once
+  index.ts             package entry used by Arcade-Game-Center
 ```
 
-## 🚫 Out of scope (v1)
+Out of scope by design: T-spins, back-to-back, combos, configurable DAS/ARR, 20G, garbage, sound, touch controls.
 
-By design, the v1 build leaves the following on the table — the intent is correctness over cleverness:
+## 🤝 Contributing
 
-- 🚫 No T-spin detection, no back-to-back bonus, no combo counter
-- 🚫 No 20G, no configurable DAS/ARR (sensible defaults are hard-coded)
-- 🚫 No multiplayer, no garbage lines
-- 🚫 No sound, no skins, no themes
-- 🚫 No mobile / touch controls
-- 🚫 No networking, no accounts
-- 🚫 No canvas renderer, no WebGL, no external game engine
+See [CONTRIBUTING.md](./CONTRIBUTING.md), the [Code of Conduct](./CODE_OF_CONDUCT.md) and [SECURITY.md](./SECURITY.md).
+Contributors are listed in [CONTRIBUTORS.md](./CONTRIBUTORS.md); changes in [CHANGELOG.md](./CHANGELOG.md).
+The original design notes live in [PLAN-TETRIS-GAME.md](./PLAN-TETRIS-GAME.md).
 
 ## ⚖️ License
 
-Released under the [MIT License](./LICENSE). © 2026 Zoltan Dul.
+[MIT](./LICENSE) © 2026 Zoltán Dul
 
 ---
 
-<p align="center">Made with ❤️ by Zoltan Dul</p>
+<p align="center">Made with ❤️ by Zoltán Dul · part of <a href="https://github.com/ZoliQua/Arcade-Game-Center">Zoltan's Arcade</a></p>
