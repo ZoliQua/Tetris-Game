@@ -1,8 +1,22 @@
+node_modules
+dist
+dist-ssr
+*.local
+*.tsbuildinfo
+
+.vite
 .DS_Store
 
-# Stray root-level scaffold files from earlier experiments;
-# the canonical project lives in Tetris-Game/
-/eslint.config.js
-/package.json
-/tsconfig.json
-/vite.config.ts
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+.vscode/*
+!.vscode/extensions.json
+.idea
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?

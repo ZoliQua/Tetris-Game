@@ -1,0 +1,59 @@
+.game {
+  max-width: 980px;
+}
+
+.layout {
+  display: grid;
+  grid-template-columns: 120px auto minmax(220px, 280px);
+  gap: 18px;
+  align-items: start;
+  justify-content: center;
+}
+
+.pieces {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.boardWrap {
+  justify-self: center;
+}
+
+.side {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.buttons {
+  display: flex;
+  gap: 8px;
+}
+
+.buttons > * {
+  flex: 1;
+}
+
+.save {
+  margin-top: 10px;
+  min-height: 16px;
+}
+
+.hint {
+  margin: 8px 0 0;
+  font-size: 12px;
+  color: var(--text-dim);
+}
+
+@media (max-width: 860px) {
+  .layout {
+    grid-template-columns: 1fr;
+  }
+
+  .pieces {
+    flex-direction: row;
+    justify-content: center;
+    order: -1;
+  }
+}
