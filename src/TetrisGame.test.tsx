@@ -124,8 +124,14 @@ describe('<TetrisDemo />', () => {
     const { container } = render(<TetrisDemo />);
     expect(container.querySelector('.arc-demo')).toBeTruthy();
     expect(container.querySelectorAll('.filled')).toHaveLength(0);
-    act(() => vi.advanceTimersByTime(4000));
-    expect(container.querySelectorAll('.filled').length).toBeGreaterThan(4);
+    // Sample the board over time: the autopilot clears lines, so a single snapshot can show
+    // fewer than one piece's worth of cells even though the demo is playing.
+    const filled: number[] = [];
+    for (let i = 0; i < 8; i++) {
+      act(() => vi.advanceTimersByTime(500));
+      filled.push(container.querySelectorAll('.filled').length);
+    }
+    expect(Math.max(...filled)).toBeGreaterThan(4);
     expect(container.querySelector('button, [tabindex]')).toBeNull();
     expect(readStats('tetris').plays).toBe(0);
     expect(localStorage.length).toBe(0);
