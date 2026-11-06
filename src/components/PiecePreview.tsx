@@ -8,11 +8,13 @@ type Props = {
   kind: PieceKind | null;
   dimmed?: boolean;
   small?: boolean;
+  /** Translated accessible name, e.g. "T piece" / "empty". */
+  label: string;
 };
 
 const SIZE = 4;
 
-export function PiecePreview({ kind, dimmed = false, small = false }: Props) {
+export function PiecePreview({ kind, dimmed = false, small = false, label }: Props) {
   const filled = new Set<string>();
   if (kind) {
     const pad = Math.floor((SIZE - BBOX_SIZE[kind]) / 2);
@@ -37,7 +39,7 @@ export function PiecePreview({ kind, dimmed = false, small = false }: Props) {
     <div
       className={`${styles.grid}${small ? ` ${styles.small}` : ''}${dimmed ? ` ${styles.dimmed}` : ''}`}
       role="img"
-      aria-label={kind ? `${kind} piece` : 'empty'}
+      aria-label={label}
     >
       {cells}
     </div>

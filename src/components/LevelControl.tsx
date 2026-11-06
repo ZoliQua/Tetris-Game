@@ -1,15 +1,17 @@
 import { MAX_START_LEVEL } from '../logic/constants';
 
 type Props = {
+  /** Translated field label ("Start level"). */
+  label: string;
   value: number;
   disabled: boolean;
   onChange: (level: number) => void;
 };
 
-export function LevelControl({ value, disabled, onChange }: Props) {
+export function LevelControl({ label, value, disabled, onChange }: Props) {
   return (
     <label className="arc-field">
-      <span>Start level</span>
+      <span>{label}</span>
       <input
         type="range"
         min={1}

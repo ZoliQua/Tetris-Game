@@ -10,6 +10,8 @@ type Props = {
   ghostY: number | null;
   /** `mini` renders the compact landing-page variant without ARIA grid roles. */
   variant?: 'full' | 'mini';
+  /** Accessible name of the full playfield. */
+  label?: string;
 };
 
 function overlayPiece(board: Board, piece: ActivePiece): Cell[][] {
@@ -30,7 +32,7 @@ function ghostCells(piece: ActivePiece, ghostY: number): Set<string> {
   return cells;
 }
 
-export const GameBoard = memo(function GameBoard({ board, active, ghostY, variant = 'full' }: Props) {
+export const GameBoard = memo(function GameBoard({ board, active, ghostY, variant = 'full', label = 'Tetris playfield' }: Props) {
   const mini = variant === 'mini';
   const rendered = active ? overlayPiece(board, active) : board;
   const ghost = active && ghostY !== null && ghostY !== active.y ? ghostCells(active, ghostY) : null;
@@ -62,7 +64,7 @@ export const GameBoard = memo(function GameBoard({ board, active, ghostY, varian
         gridTemplateRows: `repeat(${VISIBLE_ROWS}, 1fr)`,
       }}
       role={mini ? undefined : 'grid'}
-      aria-label={mini ? undefined : 'Tetris playfield'}
+      aria-label={mini ? undefined : label}
       aria-hidden={mini ? true : undefined}
     >
       {cells}

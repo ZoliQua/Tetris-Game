@@ -2,11 +2,16 @@ import { useCallback, useMemo, useState, type CSSProperties } from 'react';
 import {
   clearSession,
   formatClock,
+  formatNumber,
+  gameName,
   GameOverlay,
   KeyHelp,
   SaveBadge,
   StatPanel,
   useArcadeRun,
+  useKitMessages,
+  useLang,
+  useMessages,
   useRestoredSession,
   useRunTimer,
   useSessionAutosave,
@@ -19,29 +24,35 @@ import { LevelControl } from './components/LevelControl';
 import { NextQueue } from './components/NextQueue';
 import { useGameLoop } from './hooks/useGameLoop';
 import { useKeyboardControls } from './hooks/useKeyboardControls';
+import { MESSAGES, type TetrisMessageKey } from './i18n';
 import { MAX_START_LEVEL } from './logic/constants';
 import { advanceGame, getGhostY, initialState } from './logic/game';
 import { isTetrisState } from './logic/persist';
-import type { GameAction, GameState } from './logic/types';
+import type { GameAction, GameState, PieceKind } from './logic/types';
 import styles from './TetrisGame.module.css';
 
 /** Bump when GameState changes shape; older saves are then discarded. */
 const SESSION_SCHEMA = 1;
 
-const KEYS: [string, string][] = [
-  ['← →', 'Move (or A D)'],
-  ['↓', 'Soft drop (or S)'],
-  ['↑ X', 'Rotate clockwise (or W)'],
-  ['Z', 'Rotate counter-clockwise'],
-  ['Space', 'Hard drop'],
-  ['Shift C', 'Hold'],
-  ['Enter', 'Start / pause'],
-  ['P Esc', 'Pause / resume'],
-  ['R', 'Restart'],
+/** Key-help rows; `null` keys stand for the translated name of the Space bar. */
+const KEYS: [string | null, TetrisMessageKey][] = [
+  ['← →', 'keyMove'],
+  ['↓', 'keySoftDrop'],
+  ['↑ X', 'keyRotateCw'],
+  ['Z', 'keyRotateCcw'],
+  [null, 'keyHardDrop'],
+  ['Shift C', 'keyHold'],
+  ['Enter', 'keyStartPause'],
+  ['P Esc', 'keyPauseResume'],
+  ['R', 'keyRestart'],
 ];
 
 export function TetrisGame(props: ArcadeGameProps = {}) {
   const { embedded = false } = props;
+  const t = useMessages(MESSAGES);
+  const k = useKitMessages();
+  const [lang] = useLang();
+  const num = (n: number) => formatNumber(n, lang);
   const restored = useRestoredSession<GameState>('tetris', SESSION_SCHEMA, isTetrisState);
   const [state, setState] = useState<GameState>(() =>
     restored ? { ...restored.data, status: 'paused', isSoftDropping: false } : initialState(1),
@@ -114,6 +125,11 @@ export function TetrisGame(props: ArcadeGameProps = {}) {
     setStartLevel(Math.max(1, Math.min(MAX_START_LEVEL, level)));
   }, []);
 
+  const pieceLabel = useCallback(
+    (kind: PieceKind | null) => (kind ? t('piece', { kind }) : t('emptyPiece')),
+    [t],
+  );
+
   const ghostY = useMemo(() => getGhostY(state), [state]);
   const best = Math.max(stats.best, state.score);
   const newBest = state.score > 0 && state.score > stats.bestBeforeRun;
@@ -121,33 +137,35 @@ export function TetrisGame(props: ArcadeGameProps = {}) {
   let overlay: { title: string; message: string; actions: OverlayAction[] } | null = null;
   if (state.status === 'idle') {
     overlay = {
-      title: 'Tetris',
-      message: 'Stack the falling pieces and clear full lines. Four at once is a Tetris.',
-      actions: [{ label: 'Start', onClick: startNewRun, primary: true, kbd: 'Enter' }],
+      title: gameName('tetris', lang),
+      message: t('idleMessage'),
+      actions: [{ label: k('start'), onClick: startNewRun, primary: true, kbd: 'Enter' }],
     };
   } else if (state.status === 'paused') {
     overlay = welcomeBack
       ? {
-          title: 'Welcome back',
-          message: `Your saved run was restored — score ${state.score.toLocaleString('en-US')}, ${state.lines} lines, ${formatClock(seconds)} played.`,
+          title: k('welcomeBack'),
+          message: t('welcomeMessage', { score: num(state.score), lines: state.lines, time: formatClock(seconds) }),
           actions: [
-            { label: 'Continue', onClick: togglePause, primary: true, kbd: 'P' },
-            { label: 'New game', onClick: startNewRun, kbd: 'R' },
+            { label: t('continue'), onClick: togglePause, primary: true, kbd: 'P' },
+            { label: k('newGame'), onClick: startNewRun, kbd: 'R' },
           ],
         }
       : {
-          title: 'Paused',
-          message: 'Your run is autosaved — you can close the tab and continue later.',
+          title: k('paused'),
+          message: t('pausedMessage'),
           actions: [
-            { label: 'Resume', onClick: togglePause, primary: true, kbd: 'P' },
-            { label: 'Restart', onClick: startNewRun, kbd: 'R' },
+            { label: k('resume'), onClick: togglePause, primary: true, kbd: 'P' },
+            { label: k('restart'), onClick: startNewRun, kbd: 'R' },
           ],
         };
   } else if (state.status === 'gameOver') {
     overlay = {
-      title: 'Game over',
-      message: `Score ${state.score.toLocaleString('en-US')} · ${state.lines} lines · Best ${best.toLocaleString('en-US')}${newBest ? ' — new best!' : ''}`,
-      actions: [{ label: 'Play again', onClick: startNewRun, primary: true, kbd: 'R' }],
+      title: k('gameOver'),
+      message:
+        t('gameOverMessage', { score: num(state.score), lines: state.lines, best: num(best) }) +
+        (newBest ? t('newBestSuffix') : ''),
+      actions: [{ label: t('playAgain'), onClick: startNewRun, primary: true, kbd: 'R' }],
     };
   }
 
@@ -156,8 +174,8 @@ export function TetrisGame(props: ArcadeGameProps = {}) {
       {!embedded && (
         <header className="arc-game__head">
           <div>
-            <h1 className="arc-game__title">Tetris</h1>
-            <p className="arc-game__sub">SRS rotation, 7-bag, hold and a ghost piece.</p>
+            <h1 className="arc-game__title">{gameName('tetris', lang)}</h1>
+            <p className="arc-game__sub">{t('subtitle')}</p>
           </div>
         </header>
       )}
@@ -165,34 +183,34 @@ export function TetrisGame(props: ArcadeGameProps = {}) {
       <StatPanel
         status={state.status}
         items={[
-          { label: 'Score', value: state.score.toLocaleString('en-US') },
-          { label: 'Best', value: best.toLocaleString('en-US'), highlight: newBest },
-          { label: 'Lines', value: state.lines },
-          { label: 'Level', value: state.level },
-          { label: 'Time', value: formatClock(seconds) },
+          { label: k('score'), value: num(state.score) },
+          { label: k('best'), value: num(best), highlight: newBest },
+          { label: t('lines'), value: state.lines },
+          { label: k('level'), value: state.level },
+          { label: k('time'), value: formatClock(seconds) },
         ]}
       />
 
       <div className={styles.layout}>
         <aside className={styles.pieces}>
-          <HoldSlot hold={state.hold} canHold={state.canHold} />
-          <NextQueue queue={state.next} />
+          <HoldSlot hold={state.hold} canHold={state.canHold} label={t('hold')} pieceLabel={pieceLabel} />
+          <NextQueue queue={state.next} title={t('next')} label={t('nextAria')} pieceLabel={pieceLabel} />
         </aside>
 
         <div className={`arc-game__board ${styles.boardWrap}`}>
-          <GameBoard board={state.board} active={state.active} ghostY={ghostY} />
+          <GameBoard board={state.board} active={state.active} ghostY={ghostY} label={t('playfield')} />
           {overlay && <GameOverlay {...overlay} />}
         </div>
 
         <aside className={styles.side}>
           <section className="arc-panel">
-            <h2 className="arc-panel__title">Game</h2>
+            <h2 className="arc-panel__title">{t('panelGame')}</h2>
             <div className={styles.buttons}>
               <button type="button" className="arc-btn arc-btn--primary" onClick={primary}>
-                {state.status === 'running' ? 'Pause' : state.status === 'paused' ? 'Resume' : 'Start'}
+                {state.status === 'running' ? k('pause') : state.status === 'paused' ? k('resume') : k('start')}
               </button>
               <button type="button" className="arc-btn" onClick={startNewRun} disabled={state.status === 'idle'}>
-                Restart
+                {k('restart')}
               </button>
             </div>
             <div className={styles.save}>
@@ -201,14 +219,14 @@ export function TetrisGame(props: ArcadeGameProps = {}) {
           </section>
 
           <section className="arc-panel">
-            <h2 className="arc-panel__title">Settings</h2>
-            <LevelControl value={startLevel} disabled={inProgress} onChange={onLevelChange} />
-            <p className={styles.hint}>Applies to the next run. Gravity speeds up every 10 lines.</p>
+            <h2 className="arc-panel__title">{t('panelSettings')}</h2>
+            <LevelControl label={t('startLevel')} value={startLevel} disabled={inProgress} onChange={onLevelChange} />
+            <p className={styles.hint}>{t('levelHint')}</p>
           </section>
 
           <section className="arc-panel">
-            <h2 className="arc-panel__title">Keys</h2>
-            <KeyHelp rows={KEYS} />
+            <h2 className="arc-panel__title">{t('panelKeys')}</h2>
+            <KeyHelp rows={KEYS.map(([keys, action]) => [keys ?? t('keySpace'), t(action)])} />
           </section>
         </aside>
       </div>
