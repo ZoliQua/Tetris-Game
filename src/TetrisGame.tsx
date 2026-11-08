@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState, type CSSProperties } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import {
   clearSession,
   formatClock,
@@ -9,6 +9,7 @@ import {
   SaveBadge,
   StatPanel,
   useArcadeRun,
+  useDental,
   useKitMessages,
   useLang,
   useMessages,
@@ -18,6 +19,7 @@ import {
   type ArcadeGameProps,
   type OverlayAction,
 } from './arcade';
+import { DentalToggle } from './components/DentalToggle';
 import { GameBoard } from './components/GameBoard';
 import { HoldSlot } from './components/HoldSlot';
 import { LevelControl } from './components/LevelControl';
@@ -33,6 +35,9 @@ import styles from './TetrisGame.module.css';
 
 /** Bump when GameState changes shape; older saves are then discarded. */
 const SESSION_SCHEMA = 1;
+
+/** Length of the dental-mode "brushed" flash after a line clear. */
+const BRUSH_MS = 600;
 
 /** Key-help rows; `null` keys stand for the translated name of the Space bar. */
 const KEYS: [string | null, TetrisMessageKey][] = [
@@ -60,6 +65,9 @@ export function TetrisGame(props: ArcadeGameProps = {}) {
   const [startLevel, setStartLevel] = useState(() => restored?.data.startLevel ?? 1);
   const [runId, setRunId] = useState(0);
   const [welcomeBack, setWelcomeBack] = useState(restored !== null);
+  const [dental] = useDental();
+  const [brushed, setBrushed] = useState(false);
+  const lastLines = useRef(state.lines);
 
   const dispatch = useCallback((action: GameAction) => {
     setState((prev) => advanceGame(prev, action));
@@ -130,6 +138,18 @@ export function TetrisGame(props: ArcadeGameProps = {}) {
     [t],
   );
 
+  // Dental mode: flash a "freshly brushed" sheen whenever lines clear (presentation only).
+  useEffect(() => {
+    const cleared = state.lines > lastLines.current;
+    lastLines.current = state.lines;
+    if (cleared && dental) setBrushed(true);
+  }, [state.lines, dental]);
+  useEffect(() => {
+    if (!brushed) return;
+    const id = window.setTimeout(() => setBrushed(false), BRUSH_MS);
+    return () => window.clearTimeout(id);
+  }, [brushed]);
+
   const ghostY = useMemo(() => getGhostY(state), [state]);
   const best = Math.max(stats.best, state.score);
   const newBest = state.score > 0 && state.score > stats.bestBeforeRun;
@@ -198,7 +218,14 @@ export function TetrisGame(props: ArcadeGameProps = {}) {
         </aside>
 
         <div className={`arc-game__board ${styles.boardWrap}`}>
-          <GameBoard board={state.board} active={state.active} ghostY={ghostY} label={t('playfield')} />
+          <GameBoard
+            board={state.board}
+            active={state.active}
+            ghostY={ghostY}
+            label={t('playfield')}
+            dental={dental}
+            brushed={brushed}
+          />
           {overlay && <GameOverlay {...overlay} />}
         </div>
 
@@ -222,6 +249,9 @@ export function TetrisGame(props: ArcadeGameProps = {}) {
             <h2 className="arc-panel__title">{t('panelSettings')}</h2>
             <LevelControl label={t('startLevel')} value={startLevel} disabled={inProgress} onChange={onLevelChange} />
             <p className={styles.hint}>{t('levelHint')}</p>
+            <div className={styles.dentalRow}>
+              <DentalToggle hintClassName={styles.hint} />
+            </div>
           </section>
 
           <section className="arc-panel">

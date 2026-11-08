@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import type { ArcadeDemoProps } from '../arcade';
+import { useDental, type ArcadeDemoProps } from '../arcade';
 import { GameBoard } from '../components/GameBoard';
 import { stepDemo, type DemoState } from '../logic/autopilot';
 import { advanceGame, getGhostY, initialState } from '../logic/game';
@@ -19,6 +19,7 @@ const freshDemo = (): DemoState => ({
  */
 export function TetrisDemo({ active = true }: ArcadeDemoProps) {
   const [demo, setDemo] = useState(freshDemo);
+  const [dental] = useDental();
   const running = demo.game.status === 'running';
 
   useEffect(() => {
@@ -37,7 +38,7 @@ export function TetrisDemo({ active = true }: ArcadeDemoProps) {
 
   return (
     <div className="arc-demo" aria-hidden="true">
-      <GameBoard board={demo.game.board} active={demo.game.active} ghostY={ghostY} variant="mini" />
+      <GameBoard board={demo.game.board} active={demo.game.active} ghostY={ghostY} variant="mini" dental={dental} />
     </div>
   );
 }
