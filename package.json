@@ -1,7 +1,7 @@
 {
   "name": "tetris-game",
   "private": true,
-  "version": "1.2.0",
+  "version": "1.2.1",
   "type": "module",
   "description": "Modern Tetris in React + Vite + TypeScript — SRS rotation with wall kicks, 7-bag randomizer, hold, ghost piece, lock delay, autosave & resume, shared Zoltan’s Arcade stats. Part of Arcade-Game-Center.",
   "license": "MIT",
