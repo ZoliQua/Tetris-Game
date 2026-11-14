@@ -27,11 +27,13 @@
 * **Hold**: one slot, locked until the current piece locks down.
 * **Next queue**: 5 pieces visible.
 * **Ghost piece**: rendered at the active piece's hard-drop landing row.
-* **Controls**: arrow keys + WASD for movement, `Space` hard drop, `Shift`/`C` hold, `Z`/`X` rotate, `Enter` start/pause/resume, `P`/`Esc` pause, `R` restart. `T` is reserved for the arcade theme toggle. Gameplay keys only act while running. Keyboard only.
-* **Status mapping**: `GameStatus` is identical to the arcade `ArcadeStatus` (`idle | running | paused | gameOver`); a run is scored by `useArcadeRun` (outcome always `over`).
+* **Controls**: arrow keys + WASD for movement, `Space` hard drop, `Shift`/`C` hold, `Z`/`X` rotate, `Enter` start/pause/resume, `P`/`Esc` pause, `R` restart. `T` is reserved for the arcade theme toggle. Gameplay keys only act while running. The Rules button has no hotkey because `R` is restart.
+* **Touch** (coarse pointer): board gestures in `useBoardGestures` — tap = rotate (ignored when held > 300 ms), horizontal drag = one move per 24 px, drag down = one soft-drop cell per 24 px (held back for the first 200 ms), flick down (< 200 ms, > 80 px) = hard drop; kit `TouchPad` row ◀ ▶ ⟳ ▼ ⤓ (◀ ▶ ▼ repeat; ▼ = `softStep`); tapping the Hold panel holds. Board wrapper has `.arc-board-touch`.
+* **Rules / Finish / Full screen**: kit `RulesButton` (sections from `src/rules.tsx`, diagram `LineClearDiagram`), `FinishButton` (reducer `finish` + `finishedEarly` flag; gravity, timer and input stop while the confirm is open), `FullscreenButton` + `useImmersive` on the game root.
+* **Status mapping**: `GameStatus` is identical to the arcade `ArcadeStatus` (`idle | running | paused | gameOver`); a run is scored by `useArcadeRun` (outcome `over`, or `finished` after the Finish button).
 * **Session**: the whole `GameState` is autosaved under `arcade.session.tetris` (schema 1) and validated by `isTetrisState` (`src/logic/persist.ts`); restores open paused with a "Welcome back" overlay.
 * **Rendering**: grid-based DOM (no canvas unless explicitly requested).
-* **Target platform**: desktop browser; mobile/touch is out of scope for v1.
+* **Target platform**: desktop and phone browsers (keyboard and touch); the phone layout fits 360–430 px portrait, landscape stays usable.
 * **Communication**: respond to the user in **Hungarian** in chat, even though this file and the codebase are in English.
 
 If any fact above disagrees with the real repository, verify first and flag the divergence to the user before editing code.
@@ -68,16 +70,19 @@ src/
   hooks/
     useGameLoop.ts           rAF tick (dt capped at 100 ms); runs only while running; latest-callback ref
     useKeyboardControls.ts   single keydown/keyup/blur listener set; shouldIgnoreKey first
+    useBoardGestures.ts      touch gestures on the board (tap, drag, swipe, flick)
   components/
     GameBoard.tsx      playfield + active piece + ghost (full / mini variant)
     PiecePreview.tsx   4×4 preview used by Hold and Next
-    HoldSlot.tsx       held piece (arc-panel)
+    HoldSlot.tsx       held piece (arc-panel); a button on touch devices
+    LineClearDiagram.tsx  Rules diagram (follows dental mode)
     NextQueue.tsx      next 5 preview (arc-panel)
     LevelControl.tsx   start level (1–10) slider
     pieceColor.ts      kind → `--tetro-*` colour
   demo/TetrisDemo.tsx  landing-page attract mode (autopilot, no side effects)
   TetrisGame.tsx       embeddable game (ArcadeGameProps) + TetrisGame.module.css
-  TetrisGame.test.tsx  component + demo tests
+  rules.tsx          useRulesSections, useTouchRows (Rules dialog content, numbers from the constants)
+  TetrisGame.test.tsx  component + demo tests; rules/finish/touch tests in rules.test.tsx, finish.test.tsx, touch.test.tsx
   App.tsx              <ArcadeShell gameId="tetris"><TetrisGame /></ArcadeShell>
   main.tsx             entry; imports arcade.css, applies the theme
   index.ts             package entry for Arcade-Game-Center
@@ -94,8 +99,8 @@ A central pure reducer — `advanceGame(state, action): GameState` — is the pr
 
 The authoritative model is `src/logic/types.ts`. Key points: `Board = Cell[][]` (`board[y][x]`, y=0 at top, 22 rows),
 `active: ActivePiece | null` (null only when idle / game over), `GameState` also carries `startLevel`, `isSoftDropping` and
-`gravityAccumMs`, and actions are `tick {dtMs}`, `move {dx}`, `softDrop {pressed}`, `hardDrop`, `rotate {dir}`, `hold`,
-`pause` (toggle), `start {startLevel?}`, `restart {startLevel?}`. Changing the shape of `GameState` requires bumping
+`gravityAccumMs`, and actions are `tick {dtMs}`, `move {dx}`, `softDrop {pressed}`, `softStep` (one cell, touch), `hardDrop`, `rotate {dir}`, `hold`,
+`pause` (toggle), `finish` (end early), `start {startLevel?}`, `restart {startLevel?}`. Changing the shape of `GameState` requires bumping
 `SESSION_SCHEMA` in `TetrisGame.tsx` and updating `isTetrisState`.
 
 Deviate only if the repo already uses a cleaner model.
@@ -108,7 +113,7 @@ State machine: `idle → running → paused ↔ running → gameOver → (restar
 
 Required behavior: fixed 10×22 grid (20 visible), one active piece driven by SRS, 7-bag randomizer, next queue, hold slot with single-use-per-spawn, ghost piece at the hard-drop landing row, keyboard input that never reverses through a wall, auto-gravity driven by the level table, soft drop accelerates gravity (1 pt/cell), hard drop locks instantly (2 pts/cell), lock delay with move-reset capped at 15, line clears (Single/Double/Triple/Tetris) with Guideline-style scoring, level from total lines, game over on spawn collision or lock above the visible top, full restart resets every field of `GameState`.
 
-Out of scope for v1 unless asked: T-spin detection, back-to-back bonus, combos, configurable DAS/ARR, 20G, sound, skins, mobile/touch, multiplayer, garbage lines, line-clear animation.
+Out of scope for v1 unless asked: T-spin detection, back-to-back bonus, combos, configurable DAS/ARR, 20G, sound, skins, multiplayer, garbage lines, line-clear animation.
 
 ---
 
