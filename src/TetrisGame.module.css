@@ -16,8 +16,25 @@
   gap: 12px;
 }
 
+.boardCol {
+  justify-self: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
 .boardWrap {
   justify-self: center;
+}
+
+/* Rules · Finish · Full screen strip above the playfield. */
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
 }
 
 .side {
@@ -62,4 +79,117 @@
   margin-top: 12px;
   padding-top: 10px;
   border-top: 1px solid var(--panel-border);
+}
+
+/* Phones (portrait 360–430 px): Hold + Next become a slim column beside the board, the panels go below. */
+@media (max-width: 640px) {
+  .layout {
+    grid-template-columns: 68px auto;
+    gap: 8px;
+    justify-content: center;
+  }
+
+  .pieces {
+    flex-direction: column;
+    order: 0;
+    gap: 8px;
+    min-width: 0;
+  }
+
+  .pieces :global(.arc-panel) {
+    padding: 8px 4px;
+  }
+
+  .pieces :global(.arc-panel__title) {
+    margin-bottom: 6px;
+    font-size: 9px;
+    letter-spacing: 0.02em;
+    text-align: center;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .pieces :global([role='img']) {
+    width: 44px;
+  }
+
+  .pieces :global(section + section [role='img']) {
+    width: 34px;
+  }
+
+  .pieces :global(section + section [role='img']:first-child) {
+    width: 44px;
+  }
+
+  .side {
+    grid-column: 1 / -1;
+  }
+
+  .controls {
+    flex-wrap: nowrap;
+    justify-content: center;
+    gap: 6px;
+  }
+
+  .controls > :global(.arc-btn) {
+    flex: 1 1 auto;
+    min-width: 0;
+    gap: 5px;
+    padding-inline: 8px;
+    font-size: 13px;
+    white-space: nowrap;
+  }
+
+  .game :global(.arc-game__sub) {
+    display: none;
+  }
+}
+
+/* Five pad buttons share the board's width: slim side padding keeps the captions whole. */
+.boardCol :global(.arc-pad__btn) {
+  padding-inline: 2px;
+}
+
+/* Full screen: only the game — no title block. */
+.game:global(.arc-immersive) :global(.arc-game__head),
+.game:global(.arc-fullscreen) :global(.arc-game__head) {
+  display: none;
+}
+
+/* Touch screens: the board fits the width beside the piece column and the height above the pad. */
+@media (pointer: coarse) {
+  .boardWrap :global([role='grid']) {
+    height: min(68vh, 620px, calc(100dvh - 280px), calc((100vw - 112px) * 2));
+    min-height: 220px;
+  }
+}
+
+/* Touch, landscape: Hold/Next, board and panels side by side again. */
+@media (pointer: coarse) and (orientation: landscape) and (min-width: 641px) {
+  .layout {
+    grid-template-columns: auto auto minmax(200px, 280px);
+  }
+
+  .pieces {
+    flex-direction: column;
+    order: 0;
+  }
+
+  .boardWrap :global([role='grid']) {
+    height: calc(100dvh - 150px);
+    min-height: 200px;
+  }
+
+  /* The pad stands beside the board as a two-column block instead of a row below it. */
+  .boardCol {
+    flex-direction: row;
+    align-items: center;
+  }
+
+  .boardCol :global(.arc-pad--row) {
+    display: grid;
+    grid-template-columns: repeat(2, 60px);
+    width: auto;
+  }
 }

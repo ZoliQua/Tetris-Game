@@ -1,15 +1,22 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import {
   clearSession,
+  FinishButton,
   formatClock,
   formatNumber,
+  FullscreenButton,
   gameName,
   GameOverlay,
   KeyHelp,
+  RulesButton,
   SaveBadge,
   StatPanel,
+  TouchHelp,
+  TouchPad,
   useArcadeRun,
   useDental,
+  useImmersive,
+  useIsTouch,
   useKitMessages,
   useLang,
   useMessages,
@@ -18,12 +25,14 @@ import {
   useSessionAutosave,
   type ArcadeGameProps,
   type OverlayAction,
+  type TouchPadButton,
 } from './arcade';
 import { DentalToggle } from './components/DentalToggle';
 import { GameBoard } from './components/GameBoard';
 import { HoldSlot } from './components/HoldSlot';
 import { LevelControl } from './components/LevelControl';
 import { NextQueue } from './components/NextQueue';
+import { useBoardGestures } from './hooks/useBoardGestures';
 import { useGameLoop } from './hooks/useGameLoop';
 import { useKeyboardControls } from './hooks/useKeyboardControls';
 import { MESSAGES, type TetrisMessageKey } from './i18n';
@@ -31,6 +40,7 @@ import { MAX_START_LEVEL } from './logic/constants';
 import { advanceGame, getGhostY, initialState } from './logic/game';
 import { isTetrisState } from './logic/persist';
 import type { GameAction, GameState, PieceKind } from './logic/types';
+import { useRulesSections, useTouchRows } from './rules';
 import styles from './TetrisGame.module.css';
 
 /** Bump when GameState changes shape; older saves are then discarded. */
@@ -68,12 +78,23 @@ export function TetrisGame(props: ArcadeGameProps = {}) {
   const [dental] = useDental();
   const [brushed, setBrushed] = useState(false);
   const lastLines = useRef(state.lines);
+  /** The run was ended with the Finish button (reset with every new run). */
+  const [finishedEarly, setFinishedEarly] = useState(false);
+  /** The Finish confirm is open: gravity and the run timer wait. */
+  const [confirming, setConfirming] = useState(false);
+  const rootRef = useRef<HTMLDivElement>(null);
+  const boardRef = useRef<HTMLDivElement>(null);
+  const immersive = useImmersive(rootRef);
+  const touch = useIsTouch();
+  const rules = useRulesSections();
+  const touchRows = useTouchRows();
 
   const dispatch = useCallback((action: GameAction) => {
     setState((prev) => advanceGame(prev, action));
   }, []);
 
-  const seconds = useRunTimer(state.status === 'running', runId, runId === 0 ? (restored?.seconds ?? 0) : 0);
+  const playing = state.status === 'running' && !confirming;
+  const seconds = useRunTimer(playing, runId, runId === 0 ? (restored?.seconds ?? 0) : 0);
 
   const stats = useArcadeRun({
     gameId: 'tetris',
@@ -81,6 +102,7 @@ export function TetrisGame(props: ArcadeGameProps = {}) {
     score: state.score,
     seconds,
     runKey: runId,
+    outcome: finishedEarly ? 'finished' : 'over',
     props,
   });
 
@@ -96,10 +118,11 @@ export function TetrisGame(props: ArcadeGameProps = {}) {
   });
 
   const tick = useCallback((dtMs: number) => dispatch({ type: 'tick', dtMs }), [dispatch]);
-  useGameLoop(state.status === 'running', tick);
+  useGameLoop(playing, tick);
 
   const startNewRun = useCallback(() => {
     setWelcomeBack(false);
+    setFinishedEarly(false);
     setRunId((id) => id + 1);
     dispatch({ type: 'restart', startLevel });
   }, [dispatch, startLevel]);
@@ -117,9 +140,48 @@ export function TetrisGame(props: ArcadeGameProps = {}) {
   const discardSave = useCallback(() => {
     clearSession('tetris');
     setWelcomeBack(false);
+    setFinishedEarly(false);
     setState(initialState(startLevel));
     setRunId((id) => id + 1);
   }, [startLevel]);
+
+  // Opening the rules pauses a running game; closing leaves it paused.
+  const onRulesOpen = useCallback(
+    (open: boolean) => {
+      if (open && state.status === 'running') togglePause();
+    },
+    [state.status, togglePause],
+  );
+
+  const finishEarly = useCallback(() => {
+    setWelcomeBack(false);
+    setFinishedEarly(true);
+    dispatch({ type: 'finish' });
+  }, [dispatch]);
+
+  /** Gameplay input from the pad, the board and the Hold slot: only while the run is playing. */
+  const play = useCallback(
+    (action: GameAction) => {
+      if (playing) dispatch(action);
+    },
+    [playing, dispatch],
+  );
+
+  useBoardGestures(boardRef, {
+    enabled: playing,
+    onTap: () => dispatch({ type: 'rotate', dir: 1 }),
+    onMove: (dx) => dispatch({ type: 'move', dx }),
+    onSoftStep: () => dispatch({ type: 'softStep' }),
+    onHardDrop: () => dispatch({ type: 'hardDrop' }),
+  });
+
+  const padButtons: TouchPadButton[] = [
+    { id: 'left', label: t('padLeft'), icon: '◀', onPress: () => play({ type: 'move', dx: -1 }), repeat: true },
+    { id: 'right', label: t('padRight'), icon: '▶', onPress: () => play({ type: 'move', dx: 1 }), repeat: true },
+    { id: 'rotate', label: t('padRotate'), icon: '⟳', onPress: () => play({ type: 'rotate', dir: 1 }) },
+    { id: 'soft', label: t('padDown'), icon: '▼', onPress: () => play({ type: 'softStep' }), repeat: true },
+    { id: 'drop', label: t('padDrop'), icon: '⤓', onPress: () => play({ type: 'hardDrop' }) },
+  ];
 
   useKeyboardControls({
     playing: state.status === 'running',
@@ -181,7 +243,7 @@ export function TetrisGame(props: ArcadeGameProps = {}) {
         };
   } else if (state.status === 'gameOver') {
     overlay = {
-      title: k('gameOver'),
+      title: finishedEarly ? k('finishedEarly') : k('gameOver'),
       message:
         t('gameOverMessage', { score: num(state.score), lines: state.lines, best: num(best) }) +
         (newBest ? t('newBestSuffix') : ''),
@@ -190,7 +252,7 @@ export function TetrisGame(props: ArcadeGameProps = {}) {
   }
 
   return (
-    <div className={`arc-game ${styles.game}`} style={{ '--game-color': 'var(--game-tetris)' } as CSSProperties}>
+    <div ref={rootRef} className={`arc-game ${styles.game}`} style={{ '--game-color': 'var(--game-tetris)' } as CSSProperties}>
       {!embedded && (
         <header className="arc-game__head">
           <div>
@@ -211,22 +273,38 @@ export function TetrisGame(props: ArcadeGameProps = {}) {
         ]}
       />
 
+      <div className={styles.controls}>
+        <RulesButton sections={rules} onOpenChange={onRulesOpen} hotkey={false} gameId="tetris" />
+        <FinishButton score={state.score} visible={inProgress} onFinish={finishEarly} onOpenChange={setConfirming} />
+        <FullscreenButton immersive={immersive} />
+      </div>
+
       <div className={styles.layout}>
         <aside className={styles.pieces}>
-          <HoldSlot hold={state.hold} canHold={state.canHold} label={t('hold')} pieceLabel={pieceLabel} />
+          <HoldSlot
+            hold={state.hold}
+            canHold={state.canHold}
+            label={t('hold')}
+            pieceLabel={pieceLabel}
+            onHold={touch ? () => play({ type: 'hold' }) : undefined}
+            holdLabel={t('holdTap')}
+          />
           <NextQueue queue={state.next} title={t('next')} label={t('nextAria')} pieceLabel={pieceLabel} />
         </aside>
 
-        <div className={`arc-game__board ${styles.boardWrap}`}>
-          <GameBoard
-            board={state.board}
-            active={state.active}
-            ghostY={ghostY}
-            label={t('playfield')}
-            dental={dental}
-            brushed={brushed}
-          />
-          {overlay && <GameOverlay {...overlay} />}
+        <div className={styles.boardCol}>
+          <div ref={boardRef} className={`arc-game__board arc-board-touch ${styles.boardWrap}`}>
+            <GameBoard
+              board={state.board}
+              active={state.active}
+              ghostY={ghostY}
+              label={t('playfield')}
+              dental={dental}
+              brushed={brushed}
+            />
+            {overlay && <GameOverlay {...overlay} />}
+          </div>
+          <TouchPad buttons={padButtons} layout="row" />
         </div>
 
         <aside className={styles.side}>
@@ -255,8 +333,9 @@ export function TetrisGame(props: ArcadeGameProps = {}) {
           </section>
 
           <section className="arc-panel">
-            <h2 className="arc-panel__title">{t('panelKeys')}</h2>
+            <h2 className="arc-panel__title">{touch ? k('controls') : t('panelKeys')}</h2>
             <KeyHelp rows={KEYS.map(([keys, action]) => [keys ?? t('keySpace'), t(action)])} />
+            <TouchHelp rows={touchRows} />
           </section>
         </aside>
       </div>

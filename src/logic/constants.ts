@@ -156,3 +156,10 @@ export const POINTS_PER_LINES: Readonly<Record<1 | 2 | 3 | 4, number>> = {
   3: 500,
   4: 800,
 };
+
+/** Points per cell moved down by soft drop. */
+export const SOFT_DROP_POINTS = 1;
+/** Points per cell skipped by a hard drop. */
+export const HARD_DROP_POINTS = 2;
+/** The level rises by one every this many cleared lines. */
+export const LINES_PER_LEVEL = 10;

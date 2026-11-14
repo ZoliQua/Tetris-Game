@@ -33,3 +33,23 @@
   align-items: center;
   gap: 6px;
 }
+
+/* Touch: the Hold slot is a button (≥ 48 px target). */
+.holdBtn {
+  display: grid;
+  place-items: center;
+  min-width: 56px;
+  min-height: 56px;
+  padding: 4px;
+  border: 1px dashed var(--panel-border-strong);
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.holdBtn:disabled {
+  cursor: default;
+}

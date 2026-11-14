@@ -190,6 +190,20 @@ function applyHardDrop(state: GameState, rng: Rng): GameState {
   return lockAndSpawn(withDrop, rng);
 }
 
+function applySoftStep(state: GameState): GameState {
+  if (!state.active) return state;
+  const { active, board } = state;
+  if (collides(board, active.kind, active.rotation, active.x, active.y + 1)) return state;
+  // Like a gravity step: the lock delay restarts only once the piece rests again.
+  return {
+    ...state,
+    active: { ...active, y: active.y + 1 },
+    score: state.score + softDropPoints(1),
+    lockTimer: null,
+    lockResets: 0,
+  };
+}
+
 function applyHold(state: GameState, rng: Rng): GameState {
   if (!state.active || !state.canHold) return state;
   const currentKind = state.active.kind;
@@ -286,6 +300,7 @@ function isGameplayAction(action: GameAction): boolean {
     case 'rotate':
     case 'softDrop':
     case 'hardDrop':
+    case 'softStep':
     case 'hold':
       return true;
     default:
@@ -313,6 +328,10 @@ export function advanceGame(
       if (state.status === 'paused') return { ...state, status: 'running' };
       return state;
     }
+    case 'finish': {
+      if (state.status !== 'running' && state.status !== 'paused') return state;
+      return { ...state, status: 'gameOver', isSoftDropping: false, lockTimer: null };
+    }
     default:
       break;
   }
@@ -334,6 +353,8 @@ export function advanceGame(
       return { ...state, isSoftDropping: action.pressed };
     case 'hardDrop':
       return applyHardDrop(state, rng);
+    case 'softStep':
+      return applySoftStep(state);
     case 'hold':
       return applyHold(state, rng);
     case 'tick':

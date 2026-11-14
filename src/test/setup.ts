@@ -12,3 +12,23 @@ if (dom) {
 
 // Vitest runs without globals, so Testing Library cannot register its own cleanup.
 afterEach(() => cleanup());
+
+// jsdom has no PointerEvent: a MouseEvent subclass carries clientX/Y, pointerId and pointerType for the
+// touch tests (same polyfill as the kit's own test setup, plus pointerType).
+for (const win of [dom?.window, globalThis as unknown as Window & typeof globalThis].filter(Boolean) as (Window & typeof globalThis)[]) {
+  if (typeof win.PointerEvent === 'undefined') {
+    class PointerEventPolyfill extends win.MouseEvent {
+      readonly pointerId: number;
+      readonly pointerType: string;
+      constructor(type: string, init: PointerEventInit = {}) {
+        super(type, init);
+        this.pointerId = init.pointerId ?? 1;
+        this.pointerType = init.pointerType ?? 'mouse';
+      }
+    }
+    Object.defineProperty(win, 'PointerEvent', { configurable: true, writable: true, value: PointerEventPolyfill });
+  }
+}
+
+// jsdom does not implement scrolling; the full-screen mode restores the scroll position on exit.
+window.scrollTo = () => {};

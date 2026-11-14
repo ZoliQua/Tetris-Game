@@ -299,3 +299,22 @@ describe('isTetrisState', () => {
     expect(isTetrisState({ ...ok, lockTimer: 'soon' })).toBe(false);
   });
 });
+
+describe('touch steps and finishing early', () => {
+  it('softStep moves one cell down for 1 point and is a no-op on the stack', () => {
+    const s = advanceGame(running({ score: 10 }), { type: 'softStep' }, fixedRng);
+    expect(s.active?.y).toBe(1);
+    expect(s.score).toBe(11);
+    const floor = running({ active: { kind: 'T', rotation: 0, x: 3, y: ROWS - 2 } });
+    expect(advanceGame(floor, { type: 'softStep' }, fixedRng)).toBe(floor);
+  });
+
+  it('finish ends a running or paused run with its score; idle stays idle', () => {
+    const over = advanceGame(running({ score: 420 }), { type: 'finish' }, fixedRng);
+    expect(over).toMatchObject({ status: 'gameOver', score: 420 });
+    const paused = advanceGame(running(), { type: 'pause' }, fixedRng);
+    expect(advanceGame(paused, { type: 'finish' }, fixedRng).status).toBe('gameOver');
+    const idle = initialState(1);
+    expect(advanceGame(idle, { type: 'finish' }, fixedRng)).toBe(idle);
+  });
+});

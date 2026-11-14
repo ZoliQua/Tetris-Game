@@ -36,9 +36,13 @@ export type GameAction =
   | { type: 'move'; dx: -1 | 1 }
   | { type: 'softDrop'; pressed: boolean }
   | { type: 'hardDrop' }
+  /** One cell down now (touch ▼ / swipe), 1 pt; no-op when the piece rests on the stack. */
+  | { type: 'softStep' }
   | { type: 'rotate'; dir: -1 | 1 }
   | { type: 'hold' }
   | { type: 'pause' }
+  /** Finish early (Finish button): a running or paused run ends at once with its current score. */
+  | { type: 'finish' }
   | { type: 'start'; startLevel?: number }
   | { type: 'restart'; startLevel?: number };
 

@@ -1,0 +1,63 @@
+.diagram {
+  display: block;
+  margin: 4px auto 8px;
+  max-width: 100%;
+  height: auto;
+}
+
+.empty {
+  fill: var(--grid-empty);
+}
+
+.frame {
+  fill: var(--grid-line);
+  stroke: var(--panel-border-strong);
+}
+
+/* The full row: a dashed frame (shape, not colour) around the row that clears. */
+.full {
+  fill: none;
+  stroke: var(--text-strong);
+  stroke-width: 1.5;
+  stroke-dasharray: 4 3;
+}
+
+.check {
+  font-size: 16px;
+  font-weight: 700;
+  fill: var(--text-strong);
+}
+
+.arrow {
+  fill: none;
+  stroke: var(--text-dim);
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* The full row flashes out, then comes back, on a loop. */
+.flash {
+  animation: row-flash 1.8s ease-in-out infinite;
+}
+
+@keyframes row-flash {
+  0%,
+  35% {
+    opacity: 1;
+  }
+  55%,
+  80% {
+    opacity: 0.15;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .flash {
+    animation: none;
+    opacity: 0.55;
+  }
+}
