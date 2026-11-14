@@ -6,6 +6,8 @@ export const GESTURE_STEP_PX = 24;
 export const FLICK_MAX_MS = 200;
 /** … and longer than this is a hard drop. */
 export const FLICK_MIN_PX = 80;
+/** A still press longer than this is not a tap (no rotate on a resting finger). */
+export const TAP_MAX_MS = 300;
 
 export type BoardGestureHandlers = {
   /** Gestures act only while this is true (the run is playing). */
@@ -35,8 +37,9 @@ type Gesture = {
  * Touch gestures on the Tetris board (touch and pen; a mouse keeps the desktop behaviour):
  * - tap → rotate,
  * - horizontal drag → one sideways move per 24 px, live while the finger moves,
- * - drag down → one soft-drop cell per 24 px, live,
- * - flick down (< 200 ms, > 80 px) → hard drop on release.
+ * - drag down → one soft-drop cell per 24 px, live once the first 200 ms have passed (so a flick never soft-drops first),
+ * - flick down (< 200 ms, > 80 px) → hard drop on release; a short quick swipe gets its soft-drop cells on release,
+ * - a still press longer than 300 ms does nothing.
  * The direction locks after the first step, so a sloppy diagonal never moves and drops at once.
  * Listeners live on `ref`'s element (down) and `window` (move / up), handlers are read from a ref.
  */
@@ -49,7 +52,8 @@ export function useBoardGestures(ref: RefObject<HTMLElement>, handlers: BoardGes
     if (!el) return;
     let g: Gesture | null = null;
 
-    const step = (x: number, y: number) => {
+    /** `release`: the finger lifted, so held-back soft-drop cells are due now. */
+    const step = (x: number, y: number, release = false) => {
       if (!g) return;
       const h = latest.current;
       if (g.axis === null) {
@@ -69,6 +73,7 @@ export function useBoardGestures(ref: RefObject<HTMLElement>, handlers: BoardGes
           if (h.enabled) h.onMove(-1);
         }
       } else if (g.axis === 'y') {
+        if (!release && Date.now() - g.t0 < FLICK_MAX_MS) return; // could still become a flick
         while (y - g.ay >= GESTURE_STEP_PX) {
           g.ay += GESTURE_STEP_PX;
           if (h.enabled) h.onSoftStep();
@@ -91,11 +96,13 @@ export function useBoardGestures(ref: RefObject<HTMLElement>, handlers: BoardGes
       const { axis, y0, t0 } = g;
       const dy = e.clientY - y0;
       const ms = Date.now() - t0;
+      const flick = axis === 'y' && ms < FLICK_MAX_MS && dy > FLICK_MIN_PX;
+      if (axis === 'y' && !flick) step(e.clientX, e.clientY, true);
       end();
       const h = latest.current;
       if (!h.enabled) return;
-      if (axis === null) h.onTap();
-      else if (axis === 'y' && ms < FLICK_MAX_MS && dy > FLICK_MIN_PX) h.onHardDrop();
+      if (axis === null && ms <= TAP_MAX_MS) h.onTap();
+      else if (flick) h.onHardDrop();
     };
     const onCancel = (e: PointerEvent) => {
       if (g && e.pointerId === g.id) end();

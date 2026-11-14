@@ -1,7 +1,15 @@
 import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { applyDental, applyLang, formatNumber } from './arcade';
-import { HARD_DROP_POINTS, LINES_PER_LEVEL, POINTS_PER_LINES, SOFT_DROP_POINTS } from './logic/constants';
+import {
+  ALL_KINDS,
+  HARD_DROP_POINTS,
+  LINES_PER_LEVEL,
+  LOCK_DELAY_MS,
+  LOCK_RESET_CAP,
+  POINTS_PER_LINES,
+  SOFT_DROP_POINTS,
+} from './logic/constants';
 import { filledCells, mockPointer, runningState, saveRun, unmockPointer } from './test/helpers';
 import { TetrisGame } from './TetrisGame';
 
@@ -90,13 +98,74 @@ describe('Tetris rules dialog', () => {
     ua.mockRestore();
   });
 
-  it('the scoring section shows every scoring constant', () => {
+  const p = (n: number, lang: 'hu' | 'de') => formatNumber(n, lang);
+  const sectionText = (id: string) => (rulesDialog().querySelector(`.arc-rules__section--${id}`) as HTMLElement).textContent;
+
+  it('the scoring section spells out every scoring constant (hu)', () => {
     act(() => applyLang('hu'));
     render(<TetrisGame />);
     openRules('Szabályok');
-    const scoring = rulesDialog().querySelector('.arc-rules__section--scoring') as HTMLElement;
-    const numbers = [...Object.values(POINTS_PER_LINES), SOFT_DROP_POINTS, HARD_DROP_POINTS, LINES_PER_LEVEL];
-    for (const n of numbers) expect(scoring.textContent).toContain(formatNumber(n, 'hu'));
+    const text = sectionText('scoring');
+    for (const sentence of [
+      `Egy sor: ${p(POINTS_PER_LINES[1], 'hu')} × szint`,
+      `Két sor: ${p(POINTS_PER_LINES[2], 'hu')} × szint`,
+      `Három sor: ${p(POINTS_PER_LINES[3], 'hu')} × szint`,
+      `Tetris (négy sor): ${p(POINTS_PER_LINES[4], 'hu')} × szint`,
+      `Gyorsított esés: soronként ${p(SOFT_DROP_POINTS, 'hu')} pont`,
+      `Azonnali leejtés: soronként ${p(HARD_DROP_POINTS, 'hu')} pont`,
+      `Minden ${p(LINES_PER_LEVEL, 'hu')} sor után eggyel nő a szint, és gyorsabban esnek az idomok.`,
+    ]) {
+      expect(text).toContain(sentence);
+    }
+  });
+
+  it('the scoring section spells out every scoring constant (de)', () => {
+    act(() => applyLang('de'));
+    render(<TetrisGame />);
+    openRules('Regeln');
+    const text = sectionText('scoring');
+    for (const sentence of [
+      `Single (1 Reihe): ${p(POINTS_PER_LINES[1], 'de')} × Level`,
+      `Double (2 Reihen): ${p(POINTS_PER_LINES[2], 'de')} × Level`,
+      `Triple (3 Reihen): ${p(POINTS_PER_LINES[3], 'de')} × Level`,
+      `Tetris (4 Reihen): ${p(POINTS_PER_LINES[4], 'de')} × Level`,
+      `Schneller fallen: ${p(SOFT_DROP_POINTS, 'de')} Punkt pro Reihe`,
+      `Sofort fallen: ${p(HARD_DROP_POINTS, 'de')} Punkte pro Reihe`,
+      `Alle ${p(LINES_PER_LEVEL, 'de')} Reihen steigt das Level um eins, und die Steine fallen schneller.`,
+    ]) {
+      expect(text).toContain(sentence);
+    }
+  });
+
+  it('the bag and lock-delay rules come from the constants (hu, de)', () => {
+    const bag = ALL_KINDS.length;
+    const seconds = LOCK_DELAY_MS / 1000;
+    act(() => applyLang('hu'));
+    const { unmount } = render(<TetrisGame />);
+    openRules('Szabályok');
+    expect(sectionText('rules')).toContain(
+      `Az idomok egy megkevert zsákból jönnek, amelyben mind a ${p(bag, 'hu')} forma benne van, így minden ${p(bag, 'hu')} egymást követő idomban mindegyik forma egyszer szerepel.`,
+    );
+    expect(sectionText('rules')).toContain(
+      `A halmon fekvő idom ${p(seconds, 'hu')} másodperc múlva rögzül; minden mozgatás vagy forgatás ad egy kis haladékot, legfeljebb ${p(LOCK_RESET_CAP, 'hu')} alkalommal.`,
+    );
+    unmount();
+    act(() => applyLang('de'));
+    render(<TetrisGame />);
+    openRules('Regeln');
+    expect(sectionText('rules')).toContain(
+      `Die Steine kommen aus einem gemischten Beutel mit allen ${p(bag, 'de')} Formen, also taucht jede Form in je ${p(bag, 'de')} Steinen genau einmal auf.`,
+    );
+    expect(sectionText('rules')).toContain(
+      `Ein Stein, der auf dem Stapel liegt, rastet nach ${p(seconds, 'de')} Sekunden ein; jedes Bewegen oder Drehen verschafft dir etwas Zeit, höchstens ${p(LOCK_RESET_CAP, 'de')}-mal.`,
+    );
+  });
+
+  it('the keyboard text names every movement key', () => {
+    render(<TetrisGame />);
+    openRules();
+    const text = sectionText('play');
+    for (const k of ['A D', 'W', 'S', 'X', 'Z', 'Space', 'Shift', 'C']) expect(text).toContain(k);
   });
 
   it('draws the line-clear diagram with a ✓ mark', () => {

@@ -8,7 +8,15 @@ import {
   type RulesSection,
 } from './arcade';
 import { MESSAGES } from './i18n';
-import { HARD_DROP_POINTS, LINES_PER_LEVEL, POINTS_PER_LINES, SOFT_DROP_POINTS } from './logic/constants';
+import {
+  ALL_KINDS,
+  HARD_DROP_POINTS,
+  LINES_PER_LEVEL,
+  LOCK_DELAY_MS,
+  LOCK_RESET_CAP,
+  POINTS_PER_LINES,
+  SOFT_DROP_POINTS,
+} from './logic/constants';
 import { LineClearDiagram } from './components/LineClearDiagram';
 
 /** [gesture, action] rows for `TouchHelp` and the Rules → mobile section. */
@@ -50,10 +58,15 @@ export function useRulesSections(): RulesSection[] {
       id: 'rules',
       body: (
         <ul>
-          <li>{t('rulesBag')}</li>
+          <li>{t('rulesBag', { n: formatNumber(ALL_KINDS.length, lang) })}</li>
           <li>{t('rulesGhost')}</li>
           <li>{t('rulesHold')}</li>
-          <li>{t('rulesLock')}</li>
+          <li>
+            {t('rulesLock', {
+              seconds: formatNumber(LOCK_DELAY_MS / 1000, lang),
+              cap: formatNumber(LOCK_RESET_CAP, lang),
+            })}
+          </li>
           <li>{t('rulesEnd')}</li>
         </ul>
       ),

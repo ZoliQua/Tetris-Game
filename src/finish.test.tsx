@@ -66,6 +66,22 @@ describe('Tetris finish early', () => {
     expect(readStats('tetris')).toMatchObject({ best: 1200, plays: 1 });
   });
 
+  it('finishing at 0 points still ranks the run once', () => {
+    render(<TetrisGame onGameOver={onGameOver} />);
+    act(() => key('Enter'));
+    expect(statValue('Score')).toBe('0');
+    act(() => {
+      fireEvent.click(screen.getByRole('button', { name: 'Finish' }));
+    });
+    act(() => {
+      fireEvent.click(within(screen.getByRole('alertdialog')).getByRole('button', { name: 'Finish' }));
+    });
+    act(() => vi.advanceTimersByTime(1000));
+    expect(onGameOver).toHaveBeenCalledTimes(1);
+    expect(onGameOver).toHaveBeenCalledWith(0, { finished: true });
+    expect(screen.getByRole('dialog', { name: 'Finished early' })).toBeTruthy();
+  });
+
   it('Cancel changes nothing', () => {
     const { container } = resumeSaved();
     const board = filledCells(container);

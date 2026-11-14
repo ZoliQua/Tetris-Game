@@ -81,10 +81,11 @@
   border-top: 1px solid var(--panel-border);
 }
 
-/* Phones (portrait 360–430 px): Hold + Next become a slim column beside the board, the panels go below. */
+/* Phones (portrait 360–430 px): Hold + Next become a slim column beside the board, the pad spans the full
+   width below both (one row of five), the panels go below that. */
 @media (max-width: 640px) {
   .layout {
-    grid-template-columns: 68px auto;
+    grid-template-columns: 84px auto;
     gap: 8px;
     justify-content: center;
   }
@@ -102,12 +103,10 @@
 
   .pieces :global(.arc-panel__title) {
     margin-bottom: 6px;
-    font-size: 9px;
-    letter-spacing: 0.02em;
+    font-size: 11px;
+    letter-spacing: 0;
     text-align: center;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    overflow-wrap: anywhere;
   }
 
   .pieces :global([role='img']) {
@@ -115,11 +114,27 @@
   }
 
   .pieces :global(section + section [role='img']) {
-    width: 34px;
+    width: 28px;
+  }
+
+  /* The touch Hold button: still a ≥ 44 px target, but no taller than the board needs. */
+  .pieces :global(button) {
+    min-width: 48px;
+    min-height: 48px;
+    padding: 2px;
   }
 
   .pieces :global(section + section [role='img']:first-child) {
     width: 44px;
+  }
+
+  /* The board and the pad become grid items of .layout, so the pad can take the whole row. */
+  .boardCol {
+    display: contents;
+  }
+
+  .boardCol :global(.arc-pad) {
+    grid-column: 1 / -1;
   }
 
   .side {
@@ -146,7 +161,7 @@
   }
 }
 
-/* Five pad buttons share the board's width: slim side padding keeps the captions whole. */
+/* Pad buttons: slim side padding keeps the captions whole. */
 .boardCol :global(.arc-pad__btn) {
   padding-inline: 2px;
 }
@@ -157,15 +172,22 @@
   display: none;
 }
 
-/* Touch screens: the board fits the width beside the piece column and the height above the pad. */
+/* Touch, portrait: the board fits beside the piece column, and its height leaves room for everything else on
+   the screen. Outside full screen that is the top bar, title, stats, button strip and pad (~345 px); in full
+   screen only the stats, strip and pad (~280 px). */
 @media (pointer: coarse) {
   .boardWrap :global([role='grid']) {
-    height: min(68vh, 620px, calc(100dvh - 280px), calc((100vw - 112px) * 2));
-    min-height: 220px;
+    height: min(68vh, 620px, calc(100dvh - 345px), calc((100vw - 120px) * 2));
+    min-height: 200px;
+  }
+
+  .game:global(.arc-immersive) .boardWrap :global([role='grid']),
+  .game:global(.arc-fullscreen) .boardWrap :global([role='grid']) {
+    height: min(620px, calc(100dvh - 280px), calc((100vw - 120px) * 2));
   }
 }
 
-/* Touch, landscape: Hold/Next, board and panels side by side again. */
+/* Touch, landscape: Hold/Next, board (with the pad beside it) and panels side by side again. */
 @media (pointer: coarse) and (orientation: landscape) and (min-width: 641px) {
   .layout {
     grid-template-columns: auto auto minmax(200px, 280px);
@@ -176,12 +198,22 @@
     order: 0;
   }
 
-  .boardWrap :global([role='grid']) {
-    height: calc(100dvh - 150px);
-    min-height: 200px;
+  .game :global(.arc-game__sub) {
+    display: none;
   }
 
-  /* The pad stands beside the board as a two-column block instead of a row below it. */
+  /* Outside full screen the top bar, title, stats and strip take ~250 px; full screen is the real landscape mode. */
+  .boardWrap :global([role='grid']) {
+    height: calc(100dvh - 255px);
+    min-height: 90px;
+  }
+
+  .game:global(.arc-immersive) .boardWrap :global([role='grid']),
+  .game:global(.arc-fullscreen) .boardWrap :global([role='grid']) {
+    height: calc(100dvh - 150px);
+  }
+
+  /* The pad stands beside the board as a three-column block instead of a row below it. */
   .boardCol {
     flex-direction: row;
     align-items: center;
@@ -189,7 +221,7 @@
 
   .boardCol :global(.arc-pad--row) {
     display: grid;
-    grid-template-columns: repeat(2, 60px);
+    grid-template-columns: repeat(3, 56px);
     width: auto;
   }
 }

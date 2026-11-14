@@ -183,6 +183,26 @@ describe('Tetris board gestures', () => {
       [100, 200],
     ]);
     expect(filledCells(container)).toEqual(shifted(T_START, 0, 15));
+    // A clean hard drop: no soft-drop cells were scored on the way (15 cells × 2).
+    expect(scoreValue()).toContain('1,230');
+  });
+
+  it('a flick through several move events still scores as a clean hard drop', () => {
+    const { container } = playing();
+    gesture(boardOf(container), [
+      [100, 100],
+      [100, 130],
+      [100, 160],
+      [101, 200],
+    ]);
+    expect(filledCells(container)).toEqual(shifted(T_START, 0, 15));
+    expect(scoreValue()).toContain('1,230');
+  });
+
+  it('a long still press does not rotate', () => {
+    const { container } = playing();
+    gesture(boardOf(container), [[100, 100]], 400);
+    expect(filledCells(container)).toEqual(T_START);
   });
 
   it('gestures do nothing while the game is paused', () => {
