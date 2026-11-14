@@ -4,6 +4,16 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses
 [Semantic Versioning](https://semver.org/).
 
+## [1.3.0] — 2026-11-14
+
+### Added
+
+- Rules: a **Rules** button opens the goal, controls, rules and scoring in the active language, with a line-clear diagram that follows dental mode; opening it pauses a running game. R stays restart, so the button has no hotkey.
+- Finish early: a **Finish** button (while a run is in progress) asks for a confirm, then ends the run and ranks the score shown; the game-over card says "Finished early" and `onGameOver` gets `{ finished: true }`. Gravity and the run timer wait while the confirm is open.
+- Touch controls: tap the board to rotate, drag sideways to move one cell per 24 px, swipe down to soft-drop, flick down to hard-drop; a ◀ ▶ ⟳ ▼ ⤓ button row under the board (◀ ▶ ▼ repeat while held); tap the Hold panel to hold. The phone layout puts Hold and Next beside the board and fits 360 px portrait.
+- Full screen: a **Full screen** button (CSS full-screen mode on iPhone, where the browser has no Fullscreen API for pages).
+- README in German (`README.de.md`) and Hungarian (`README.hu.md`); the family table lists all fifteen games, including Snapszer.
+
 ## [1.2.1] — 2026-11-14
 
 ### Changed

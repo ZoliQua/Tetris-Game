@@ -1,7 +1,9 @@
 # 🧱 Tetris
 
-A correct, minimal, type-safe **Tetris** built with **React 18**, **Vite** and **TypeScript** — SRS rotation, 7-bag, hold, ghost piece, keyboard-first, grid-based DOM, no canvas, no game engine.
-Runs on its own **and** as one of the fourteen games of **[Zoltan's Arcade](https://github.com/ZoliQua/Arcade-Game-Center)**.
+**English** · [Deutsch](README.de.md) · [Magyar](README.hu.md)
+
+A correct, minimal, type-safe **Tetris** built with **React 18**, **Vite** and **TypeScript** — SRS rotation, 7-bag, hold, ghost piece, for keyboard and touch, grid-based DOM, no canvas, no game engine.
+Runs on its own **and** as one of the fifteen games of **[Zoltan's Arcade](https://github.com/ZoliQua/Arcade-Game-Center)**.
 
 [![CI](https://github.com/ZoliQua/Tetris-Game/actions/workflows/ci.yml/badge.svg)](https://github.com/ZoliQua/Tetris-Game/actions/workflows/ci.yml)
 ![license](https://img.shields.io/badge/license-MIT-green)
@@ -49,6 +51,7 @@ Every game is a standalone repo that also plugs into the portal. They share one 
 | 💣 Minesweeper | [Minesweeper-Game](https://github.com/ZoliQua/Minesweeper-Game) | Logic |
 | ♠️ Solitaire | [Solitaire-Game](https://github.com/ZoliQua/Solitaire-Game) | Cards |
 | 🎴 Ulti | [Ulti-Game](https://github.com/ZoliQua/Ulti-Game) | Cards |
+| 🂡 Snapszer | [Snapszer-Game](https://github.com/ZoliQua/Snapszer-Game) | Cards |
 
 ## ✨ Features
 
@@ -66,8 +69,12 @@ Every game is a standalone repo that also plugs into the portal. They share one 
 - 🌗 **Dark / light theme** shared with every arcade game (press **T**)
 - 🌍 **Three languages** — English, Hungarian and German; switch in the top bar or in the settings (also `?lang=en|hu|de` for link hand-off); numbers follow the locale's grouping
 - 🦷 **Dental mode** — a „Fogas mód” / "Dental mode" / „Zahnmodus” toggle in the settings, off by default (or `?dental=1`), shared across the whole arcade: every cell becomes a small tooth in the piece's colour, and a cleared line flashes "brushed clean"; presentation only
+- 📖 **Rules** — the Rules button opens the goal, controls, rules and scoring in the active language, with a small line-clear diagram; opening it pauses the run
+- 🏁 **Finish early** — end a run whenever you like: after a confirm, the score shown goes on the leaderboard
+- 📱 **Touch controls** — tap, drag and flick on the board, plus a ◀ ▶ ⟳ ▼ ⤓ button row under it; tap the Hold panel to hold
+- ⛶ **Full screen** — the game fills the screen (on iPhone without the browser's own full-screen API, too)
 - 🤖 **Attract-mode demo** (`<TetrisDemo />`) — the real reducer driven by a heuristic autopilot, shown on the portal's landing page
-- ⌨️ **Keyboard-first**; hotkeys are ignored while you type in a form field or hold Cmd/Ctrl/Alt
+- ⌨️ **Keyboard and touch**; hotkeys are ignored while you type in a form field or hold Cmd/Ctrl/Alt
 - 🧪 **Tested** — pure-logic unit tests plus component tests with Vitest + Testing Library
 
 ## 🚀 Quick start
@@ -99,7 +106,12 @@ Production build: `npm run build && npm run preview`. The build uses relative as
 | **T** | Toggle dark / light theme (standalone page) |
 
 Gameplay keys only act while a run is playing; **Space** is always hard drop and never starts a run, so a late
-drop at game over can't launch the next game by accident.
+drop at game over can't launch the next game by accident. **R** stays restart, so the **Rules** button has no hotkey.
+
+**On a phone:** tap the board to rotate, drag sideways to move one cell per finger step, swipe down to soft-drop and
+flick down quickly to hard-drop; the ◀ ▶ ⟳ ▼ ⤓ buttons under the board do the same (◀ ▶ ▼ repeat while held), and a
+tap on the **Hold** panel holds the piece. The **Rules**, **Finish** and **Full screen** buttons sit above the board.
+On iPhone, add the page to the Home Screen for a view without browser bars.
 
 ## 🎯 Scoring & stats
 
@@ -127,6 +139,9 @@ Soft-drop gravity = `max(30 ms, floor(currentGravityMs / 20))`. Hard drop bypass
 **Lock delay & hold**: a grounded piece locks after **500 ms**; every successful move or rotation resets the timer, at most
 **15 times** per piece (Guideline move reset). Hold is a single slot: once used it stays locked until the current piece locks down.
 
+**Finish early**: the **Finish** button (shown while a run is in progress) asks for a confirm, then ends the run and ranks
+the score shown at that moment; the game-over card says *Finished early*.
+
 When a run ends the kit records it once in `localStorage` under `arcade.stats.tetris`
 (`best`, `plays`, `wins`, `totalScore`, `totalSeconds`, `lastScore`, `lastPlayedAt`).
 The legacy `tetris.highScore` key is migrated and kept in sync, so older builds keep their record.
@@ -152,6 +167,7 @@ import { TetrisGame, TetrisDemo } from '@arcade/tetris';
 ```
 
 Both components follow the shared `ArcadeGameProps` / `ArcadeDemoProps` contract from `src/arcade/types.ts`.
+A run ended with **Finish** calls `onGameOver(score, { finished: true })`, even at 0 points.
 
 ## 🧠 How it works
 
@@ -204,16 +220,17 @@ src/
     game.ts            advanceGame reducer + initialState + getGhostY
     autopilot.ts       heuristic placement bot for the demo (planMove, stepDemo)
     persist.ts         runtime validation of saved sessions
-  hooks/               useGameLoop (rAF), useKeyboardControls
-  components/          GameBoard (full + mini), PiecePreview, HoldSlot, NextQueue, LevelControl
+  hooks/               useGameLoop (rAF), useKeyboardControls, useBoardGestures (touch)
+  components/          GameBoard (full + mini), PiecePreview, HoldSlot, NextQueue, LevelControl, LineClearDiagram
   demo/TetrisDemo.tsx  landing-page attract mode
+  rules.tsx            Rules dialog sections (diagram: components/LineClearDiagram)
   TetrisGame.tsx       the embeddable game (ArcadeGameProps)
   App.tsx              standalone page: <ArcadeShell><TetrisGame/></ArcadeShell>
   main.tsx             entry; loads the shared arcade.css once
   index.ts             package entry used by Arcade-Game-Center
 ```
 
-Out of scope by design: T-spins, back-to-back, combos, configurable DAS/ARR, 20G, garbage, sound, touch controls.
+Out of scope by design: T-spins, back-to-back, combos, configurable DAS/ARR, 20G, garbage, sound.
 
 ## 🤝 Contributing
 
